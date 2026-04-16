@@ -1,17 +1,16 @@
-/*
- * Lexical Analyzer (Lexer)
- *
- * Tokenizes the input C source code into a stream of tokens.
- * Handles keywords, identifiers, operators, literals, and special symbols.
- */
+typedef enum {
+    TOKEN_KEYWORD,    // int, return, if, else
+    TOKEN_IDENTIFIER, // variable names, function names
+    TOKEN_LITERAL,    // 10, 3.14, "hello"
+    TOKEN_OPERATOR,   // +, -, *, /, =
+    TOKEN_SEPARATOR,  // {, }, (, ), ;, ,
+    TOKEN_EOF,        // End of file
+    TOKEN_ERROR       // For invalid characters
+} TokenType;
 
-#ifndef LEXER_H
-#define LEXER_H
-
-// Placeholder for lexer interface
-// To be implemented with:
-// - Token definitions
-// - Lexer state management
-// - Token scanning functions
-
-#endif
+typedef struct {
+    TokenType type;
+    char lexeme[256]; // The actual string (e.g., "int")
+    int line;
+    int column;
+} Token;
