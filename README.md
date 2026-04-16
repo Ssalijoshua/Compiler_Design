@@ -46,11 +46,122 @@ Compiler_Design/
 
 ## Building the Compiler
 
+### Prerequisites
+
+- `gcc` (GNU C Compiler)
+- `make` (Build automation tool)
+
+### Make Commands
+
+#### 1. Build the compiler
+
 ```bash
-make              # Build the compiler
-make clean        # Remove build artifacts
-make run          # Build and run
-make help         # Display help
+make
+```
+
+This compiles all source files and generates the `compiler` executable.
+
+#### 2. Clean build artifacts
+
+```bash
+make clean
+```
+
+Removes all object files (`.o`) and the executable to prepare for a fresh build.
+
+#### 3. Clean and rebuild
+
+```bash
+make clean && make
+```
+
+Useful when you've made changes and want a complete fresh compilation.
+
+#### 4. Display help
+
+```bash
+make help
+```
+
+Shows all available make targets and their descriptions.
+
+### Complete Build Workflow
+
+```bash
+# 1. Clone/navigate to project directory
+cd Compiler_Design
+
+# 2. Build the compiler
+make
+
+# 3. Run lexer on an example file
+./compiler examples/test_lexer.c
+
+# 4. Clean up when done
+make clean
+```
+
+## Using the Lexical Analyzer
+
+The lexical analyzer tokenizes C source code into tokens for further processing.
+
+### Running the Lexer on a File
+
+After building the compiler, you can run the lexer on any C source file:
+
+```bash
+./compiler <source_file >
+```
+
+This will output a formatted table showing:
+
+- **LEXEME** - The actual token string
+- **TOKEN TYPE** - Classification (KEYWORD, IDENTIFIER, LITERAL, OPERATOR, SEPARATOR, EOF, ERROR)
+- **LINE** - Line number in the source file
+- **COLUMN** - Column position in the source file
+
+### Example: Lexical Analysis
+
+```bash
+# Analyze the test file
+./compiler examples/test_lexer.c
+
+# Output preview:
+# Lexical Analysis of: examples/test_lexer.c
+
+# LEXEME               TOKEN TYPE           LINE     COLUMN
+# int                  KEYWORD              2        1
+# main                 IDENTIFIER           2        4
+# (                    SEPARATOR            2        7
+# ...
+```
+
+### Supported Tokens
+
+1. **Keywords**: `int`, `float`, `char`, `double`, `void`, `return`, `if`, `else`, `while`, `for`, `do`, `break`, `continue`, `struct`, `typedef`, `switch`, `case`, `default`
+2. **Identifiers**: Variable names, function names (alphanumeric + underscore)
+3. **Literals**:
+   - Integers: `10`, `255`, `0`
+   - Floating-point: `3.14`, `2.5`
+   - Strings: `"Hello World"`
+   - Characters: `'a'`, `'\n'`
+4. **Operators**: `+`, `-`, `*`, `/`, `%`, `=`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `&`, `|`
+5. **Separators**: `{`, `}`, `(`, `)`, `[`, `]`, `;`, `,`, `.`
+6. **Comments**: Single-line (`//`) and block comments (`/* */`)
+
+### Running Examples
+
+We provide example C programs to test the lexer:
+
+```bash
+# Run the lexer on the basic test file
+./compiler examples/test_lexer.c
+```
+
+To create your own test file, simply create a `.c` file in the `examples/` directory and run:
+
+```bash
+./compiler examples/your_file.c
 ```
 
 ## Modules
