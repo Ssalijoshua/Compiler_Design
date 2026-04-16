@@ -140,21 +140,36 @@ Token get_next_token(FILE *fp)
         }
 
         // Check for decimal point
-        if (c == '.' && isdigit(fgetc(fp)))
+        if (c == '.')
         {
-            token.lexeme[i++] = '.';
-            column++;
-            c = fgetc(fp);
-            while (isdigit(c))
+            int next = fgetc(fp);
+            if (isdigit(next))
             {
-                token.lexeme[i++] = c;
-                c = fgetc(fp);
+                token.lexeme[i++] = '.';
                 column++;
+                c = next;
+                while (isdigit(c))
+                {
+                    token.lexeme[i++] = c;
+                    c = fgetc(fp);
+                    column++;
+                }
+                ungetc(c, fp);
+                column--;
+            }
+            else
+            {
+                ungetc(next, fp);
+                ungetc(c, fp);
+                column--;
             }
         }
+        else
+        {
+            ungetc(c, fp);
+            column--;
+        }
 
-        ungetc(c, fp);
-        column--;
         token.lexeme[i] = '\0';
         token.type = TOKEN_LITERAL;
         return token;
@@ -343,6 +358,8 @@ Token get_next_token(FILE *fp)
     case '}':
     case '(':
     case ')':
+    case '[':
+    case ']':
     case ';':
     case ',':
     case '.':

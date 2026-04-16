@@ -3,7 +3,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -I./include
 LDFLAGS = 
-SOURCES = src/*.c
+SOURCES = src/main.c src/lexer.c src/parser.c src/ast.c src/semantic.c src/symtab.c src/ir.c src/codegen.c src/error.c src/utils.c
 OBJECTS = $(SOURCES:.c=.o)
 EXECUTABLE = compiler
 
