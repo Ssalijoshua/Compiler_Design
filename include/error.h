@@ -8,12 +8,22 @@
 #ifndef ERROR_H
 #define ERROR_H
 
-// Placeholder for error handling interface
-// To be implemented with:
-// - Error message formatting
-// - Error codes/types
-// - Location tracking (line, column)
-// - Error recovery strategies
-// - Warning and error reporting functions
+#include <stdio.h>
+
+typedef enum
+{
+    ERROR_SYNTAX,
+    ERROR_SEMANTIC,
+    ERROR_TYPE_MISMATCH,
+    ERROR_UNDEFINED_SYMBOL,
+    ERROR_REDEFINED_SYMBOL,
+    ERROR_INVALID_OPERATION,
+} ErrorType;
+
+void error_report(ErrorType type, int line, int column, const char *message);
+void error_print(const char *format, ...);
+
+extern int error_count;
+extern int warning_count;
 
 #endif

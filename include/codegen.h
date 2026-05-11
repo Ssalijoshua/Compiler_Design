@@ -1,19 +1,24 @@
 /*
  * Code Generator
  *
- * Converts intermediate representation (IR) to machine code.
- * Generates assembly code that targets a specific architecture.
+ * Converts intermediate representation (IR) to assembly code.
+ * Generates assembly code output.
  */
 
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
-// Placeholder for code generator interface
-// To be implemented with:
-// - Assembly instruction generation
-// - Register allocation strategies
-// - Memory layout management
-// - Function prologue/epilogue generation
-// - Assembly output functions
+#include "ir.h"
+#include <stdio.h>
+
+typedef struct
+{
+    FILE *output;
+    int label_count;
+} CodeGenerator;
+
+CodeGenerator *codegen_create(FILE *output);
+void codegen_free(CodeGenerator *gen);
+int codegen_generate(CodeGenerator *gen, IRGenerator *ir);
 
 #endif

@@ -337,12 +337,42 @@ Token get_next_token(FILE *fp)
     if (c == '&')
     {
         token.lexeme[0] = c;
-        token.lexeme[1] = '\0';
+        next_c = fgetc(fp);
+        if (next_c == '&')
+        {
+            token.lexeme[1] = next_c;
+            token.lexeme[2] = '\0';
+            column += 2;
+        }
+        else
+        {
+            ungetc(next_c, fp);
+            token.lexeme[1] = '\0';
+            column++;
+        }
         token.type = TOKEN_OPERATOR;
-        column++;
         return token;
     }
     if (c == '|')
+    {
+        token.lexeme[0] = c;
+        next_c = fgetc(fp);
+        if (next_c == '|')
+        {
+            token.lexeme[1] = next_c;
+            token.lexeme[2] = '\0';
+            column += 2;
+        }
+        else
+        {
+            ungetc(next_c, fp);
+            token.lexeme[1] = '\0';
+            column++;
+        }
+        token.type = TOKEN_OPERATOR;
+        return token;
+    }
+    if (c == '/')
     {
         token.lexeme[0] = c;
         token.lexeme[1] = '\0';

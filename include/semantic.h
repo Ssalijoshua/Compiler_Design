@@ -8,11 +8,18 @@
 #ifndef SEMANTIC_H
 #define SEMANTIC_H
 
-// Placeholder for semantic analyzer interface
-// To be implemented with:
-// - Type checking functions
-// - Symbol resolution
-// - Scope verification
-// - Semantic error detection
+#include "ast.h"
+#include "symtab.h"
+
+typedef struct
+{
+    SymbolTable *symtab;
+    int error_count;
+} SemanticAnalyzer;
+
+SemanticAnalyzer *semantic_create(void);
+void semantic_free(SemanticAnalyzer *analyzer);
+int semantic_analyze(SemanticAnalyzer *analyzer, ASTNode *ast);
+DataType semantic_get_type(SemanticAnalyzer *analyzer, ASTNode *node);
 
 #endif

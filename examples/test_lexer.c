@@ -1,4 +1,4 @@
-// This is a simple test program for the lexer
+// The purpose of this line is to show that the comments will be skipped by the lexer
 int main() {
     int x = 10;
     float y = 3.14;
