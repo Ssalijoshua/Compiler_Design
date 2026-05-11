@@ -1,9 +1,3 @@
-/*
- * Semantic Analyzer Implementation
- *
- * Source file for semantic analysis.
- */
-
 #include "../include/semantic.h"
 #include "../include/error.h"
 #include "../include/utils.h"
@@ -62,10 +56,10 @@ static int semantic_check_node(SemanticAnalyzer *analyzer, ASTNode *node)
     case NODE_FUNCTION_DECL:
         // Define function in symbol table
         if (!symtab_define(analyzer->symtab, node->data.function_decl.name,
-                          SYMBOL_FUNCTION, node->data.function_decl.return_type, 0))
+                           SYMBOL_FUNCTION, node->data.function_decl.return_type, 0))
         {
             error_report(ERROR_REDEFINED_SYMBOL, node->line, node->column,
-                        "Function already defined");
+                         "Function already defined");
             analyzer->error_count++;
         }
 
@@ -79,8 +73,8 @@ static int semantic_check_node(SemanticAnalyzer *analyzer, ASTNode *node)
             if (param->type == NODE_VAR_DECL)
             {
                 symtab_define(analyzer->symtab, param->data.var_decl.name,
-                            SYMBOL_PARAM, param->data.var_decl.data_type,
-                            param->data.var_decl.is_array);
+                              SYMBOL_PARAM, param->data.var_decl.data_type,
+                              param->data.var_decl.is_array);
             }
         }
 
@@ -93,11 +87,11 @@ static int semantic_check_node(SemanticAnalyzer *analyzer, ASTNode *node)
     case NODE_VAR_DECL:
         // Define variable in symbol table
         if (!symtab_define(analyzer->symtab, node->data.var_decl.name,
-                          SYMBOL_VAR, node->data.var_decl.data_type,
-                          node->data.var_decl.is_array))
+                           SYMBOL_VAR, node->data.var_decl.data_type,
+                           node->data.var_decl.is_array))
         {
             error_report(ERROR_REDEFINED_SYMBOL, node->line, node->column,
-                        "Variable already defined");
+                         "Variable already defined");
             analyzer->error_count++;
         }
 
@@ -179,7 +173,7 @@ static int semantic_check_node(SemanticAnalyzer *analyzer, ASTNode *node)
         if (symtab_lookup(analyzer->symtab, node->data.function_call.function_name) == NULL)
         {
             error_report(ERROR_UNDEFINED_SYMBOL, node->line, node->column,
-                        "Undefined function");
+                         "Undefined function");
             analyzer->error_count++;
         }
 
@@ -195,7 +189,7 @@ static int semantic_check_node(SemanticAnalyzer *analyzer, ASTNode *node)
         if (symtab_lookup(analyzer->symtab, node->data.identifier.name) == NULL)
         {
             error_report(ERROR_UNDEFINED_SYMBOL, node->line, node->column,
-                        "Undefined variable");
+                         "Undefined variable");
             analyzer->error_count++;
         }
         break;
@@ -205,7 +199,7 @@ static int semantic_check_node(SemanticAnalyzer *analyzer, ASTNode *node)
         if (symtab_lookup(analyzer->symtab, node->data.array_access.array_name) == NULL)
         {
             error_report(ERROR_UNDEFINED_SYMBOL, node->line, node->column,
-                        "Undefined array");
+                         "Undefined array");
             analyzer->error_count++;
         }
         semantic_check_node(analyzer, node->data.array_access.index);

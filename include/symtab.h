@@ -1,9 +1,3 @@
-/*
- * Symbol Table Manager
- *
- * Manages symbol tables for tracking variables, functions, and types.
- * Handles scope management and symbol lookups.
- */
 
 #ifndef SYMTAB_H
 #define SYMTAB_H

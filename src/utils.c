@@ -54,7 +54,7 @@ char *xstrdup(const char *str)
 {
     if (str == NULL)
         return NULL;
-    
+
     size_t len = strlen(str) + 1;
     char *dup = (char *)xmalloc(len);
     strcpy(dup, str);
@@ -67,7 +67,7 @@ char *str_concat(const char *a, const char *b)
         a = "";
     if (b == NULL)
         b = "";
-    
+
     size_t len = strlen(a) + strlen(b) + 1;
     char *result = (char *)xmalloc(len);
     strcpy(result, a);

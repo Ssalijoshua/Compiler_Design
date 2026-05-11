@@ -1,10 +1,3 @@
-/*
- * Main Compiler Driver
- *
- * Entry point for the compiler.
- * Orchestrates the compilation pipeline: lexing -> parsing -> semantic analysis -> IR -> code generation.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
