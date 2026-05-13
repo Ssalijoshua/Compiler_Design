@@ -82,35 +82,40 @@ int main(int argc, char *argv[])
     }
 
     // ===== PHASE 0: LEXICAL ANALYSIS =====
+    printf("=== PHASE 0: LEXICAL ANALYSIS ===\n");
+    printf("File: %s\n", filename);
+    printf("%-20s %-20s %-8s %s\n", "LEXEME", "TOKEN TYPE", "LINE", "COLUMN");
+    printf("%-20s %-20s %-8s %s\n", "------", "----------", "----", "------");
+
+    Token token;
+    do
+    {
+        token = get_next_token(fp);
+
+        printf("%-20s %-20s %-8d %d\n",
+               token.lexeme,
+               token.type == TOKEN_EOF ? "EOF" : token.type == TOKEN_KEYWORD  ? "KEYWORD"
+                                             : token.type == TOKEN_IDENTIFIER ? "IDENTIFIER"
+                                             : token.type == TOKEN_LITERAL    ? "LITERAL"
+                                             : token.type == TOKEN_OPERATOR   ? "OPERATOR"
+                                             : token.type == TOKEN_SEPARATOR  ? "SEPARATOR"
+                                             : token.type == TOKEN_ERROR      ? "ERROR"
+                                                                              : "UNKNOWN",
+               token.line,
+               token.column);
+
+    } while (token.type != TOKEN_EOF);
+
+    // If -lexer mode, stop here
     if (mode == 0)
     {
-        printf("=== LEXICAL ANALYSIS ===\n");
-        printf("File: %s\n", filename);
-        printf("%-20s %-20s %-8s %s\n", "LEXEME", "TOKEN TYPE", "LINE", "COLUMN");
-        printf("%-20s %-20s %-8s %s\n", "------", "----------", "----", "------");
-
-        Token token;
-        do
-        {
-            token = get_next_token(fp);
-
-            printf("%-20s %-20s %-8d %d\n",
-                   token.lexeme,
-                   token.type == TOKEN_EOF ? "EOF" : token.type == TOKEN_KEYWORD  ? "KEYWORD"
-                                                 : token.type == TOKEN_IDENTIFIER ? "IDENTIFIER"
-                                                 : token.type == TOKEN_LITERAL    ? "LITERAL"
-                                                 : token.type == TOKEN_OPERATOR   ? "OPERATOR"
-                                                 : token.type == TOKEN_SEPARATOR  ? "SEPARATOR"
-                                                 : token.type == TOKEN_ERROR      ? "ERROR"
-                                                                                  : "UNKNOWN",
-                   token.line,
-                   token.column);
-
-        } while (token.type != TOKEN_EOF);
-
+        printf("\n");
         fclose(fp);
         return 0;
     }
+
+    // Rewind file for parser to use
+    rewind(fp);
 
     // ===== PHASE 1: PARSING =====
     printf("=== PHASE 1: SYNTAX ANALYSIS & AST CONSTRUCTION ===\n");
@@ -206,9 +211,19 @@ int main(int argc, char *argv[])
     // ===== PHASE 4-5: CODE GENERATION =====
     printf("\n=== PHASE 4: CODE GENERATION ===\n");
 
-    // Generate output file name
+    // Generate output file name in output folder
     char output_file[512];
-    strcpy(output_file, filename);
+    const char *base_filename = strrchr(filename, '/');
+    if (base_filename == NULL)
+    {
+        base_filename = filename; // No path separator, use filename as is
+    }
+    else
+    {
+        base_filename++; // Skip the '/' character
+    }
+
+    sprintf(output_file, "output/%s", base_filename);
     // Replace .c with .s
     char *dot = strrchr(output_file, '.');
     if (dot != NULL)
