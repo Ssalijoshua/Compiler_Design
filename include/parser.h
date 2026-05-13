@@ -18,6 +18,9 @@ typedef struct
     Token current_token;
     int error_count;
     int warning_count;
+    // Support for comma-separated variable declarations
+    ASTNode **pending_decls;
+    int pending_count;
 } Parser;
 
 // Initialize parser with input file

@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 
     // Rewind file for parser to use
     rewind(fp);
-    reset_lexer();  // Reset lexer state for parsing
+    reset_lexer(); // Reset lexer state for parsing
 
     // ===== PHASE 1: PARSING =====
     printf("=== PHASE 1: SYNTAX ANALYSIS & AST CONSTRUCTION ===\n");
@@ -134,32 +134,28 @@ int main(int argc, char *argv[])
 
     printf("Errors: %d | Warnings: %d\n\n", parser->error_count, parser->warning_count);
 
-    // Check for syntax errors and stop compilation if found
-    if (parser->error_count > 0)
-    {
-        printf("\n=== COMPILATION FAILED ===\n");
-        printf("Syntax Errors: %d\n", parser->error_count);
-        printf("Compilation stopped at Phase 1 due to syntax errors.\n");
-        ast_free(ast);
-        parser_free(parser);
-        return 1;
-    }
+    // Continue compilation even if there are syntax errors
+    // This allows us to collect all errors (syntax and semantic) at once
 
-    if (ast == NULL)
-    {
-        fprintf(stderr, "Error: Failed to parse program\n");
-        parser_free(parser);
-        return 1;
-    }
-
+    // If mode is 1 (parser only), don't continue further
     if (mode == 1)
     {
         printf("=== ABSTRACT SYNTAX TREE ===\n");
-        ast_print(ast, 0);
+        if (ast != NULL)
+        {
+            ast_print(ast, 0);
+        }
+        else
+        {
+            printf("(AST could not be constructed due to syntax errors)\n");
+        }
         printf("\n");
-        ast_free(ast);
+        if (ast != NULL)
+        {
+            ast_free(ast);
+        }
         parser_free(parser);
-        return 0;
+        return parser->error_count > 0 ? 1 : 0;
     }
 
     // ===== PHASE 2: SEMANTIC ANALYSIS =====
@@ -169,56 +165,100 @@ int main(int argc, char *argv[])
     if (analyzer == NULL)
     {
         fprintf(stderr, "Error: Failed to create semantic analyzer\n");
-        ast_free(ast);
+        if (ast != NULL)
+        {
+            ast_free(ast);
+        }
         parser_free(parser);
         return 1;
     }
 
     reset_error_counters();
-    int semantic_ok = semantic_analyze(analyzer, ast);
-    printf("Semantic analysis complete.\n");
-    printf("Errors: %d\n\n", semantic_error_count);
 
-    if (!semantic_ok && semantic_error_count > 0)
+    // Only run semantic analysis if AST was successfully built
+    if (ast != NULL)
     {
-        fprintf(stderr, "Warning: Semantic errors found, continuing anyway...\n");
+        int semantic_ok = semantic_analyze(analyzer, ast);
+        printf("Semantic analysis complete.\n");
+        printf("Errors: %d\n", semantic_error_count);
+
+        // Print symbol table
+        symtab_print(analyzer->symtab);
+
+        if (!semantic_ok && semantic_error_count > 0)
+        {
+            fprintf(stderr, "Warning: Semantic errors found, continuing anyway...\n");
+        }
+    }
+    else
+    {
+        printf("Semantic analysis skipped due to syntax errors in parsing.\n");
+        printf("Errors: 0\n\n");
     }
 
     if (mode == 2)
     {
         printf("=== ABSTRACT SYNTAX TREE ===\n");
-        ast_print(ast, 0);
+        if (ast != NULL)
+        {
+            ast_print(ast, 0);
+        }
+        else
+        {
+            printf("(AST could not be constructed due to syntax errors)\n");
+        }
         printf("\n");
         semantic_free(analyzer);
-        ast_free(ast);
+        if (ast != NULL)
+        {
+            ast_free(ast);
+        }
         parser_free(parser);
-        return semantic_error_count > 0 ? 1 : 0;
+        return (parser->error_count + semantic_error_count) > 0 ? 1 : 0;
     }
 
     // ===== PHASE 3: INTERMEDIATE CODE GENERATION =====
     printf("\n=== PHASE 3: INTERMEDIATE CODE GENERATION ===\n");
 
-    IRGenerator *ir = ir_create();
-    if (ir == NULL)
-    {
-        fprintf(stderr, "Error: Failed to create IR generator\n");
-        semantic_free(analyzer);
-        ast_free(ast);
-        parser_free(parser);
-        return 1;
-    }
+    IRGenerator *ir = NULL;
 
-    ir_generate(ir, ast);
-    ir_print(ir);
+    if (ast != NULL)
+    {
+        ir = ir_create();
+        if (ir == NULL)
+        {
+            fprintf(stderr, "Error: Failed to create IR generator\n");
+            semantic_free(analyzer);
+            if (ast != NULL)
+            {
+                ast_free(ast);
+            }
+            parser_free(parser);
+            return 1;
+        }
+
+        ir_generate(ir, ast);
+        ir_print(ir);
+    }
+    else
+    {
+        printf("IR generation skipped due to syntax errors.\n");
+    }
 
     if (mode == 3)
     {
         printf("\n");
-        ir_free(ir);
+        if (ir != NULL)
+        {
+            ir_free(ir);
+        }
         semantic_free(analyzer);
-        ast_free(ast);
+        if (ast != NULL)
+        {
+            ast_free(ast);
+        }
         parser_free(parser);
-        return semantic_error_count > 0 ? 1 : 0;
+        return (parser->error_count + semantic_error_count) > 0 ? 1 : 0;
     }
 
     // ===== PHASE 4-5: CODE GENERATION =====
@@ -260,18 +300,33 @@ int main(int argc, char *argv[])
         printf("Output file: %s\n", output_file);
     }
 
-    CodeGenerator *codegen = codegen_create(out_fp);
-    if (codegen == NULL)
+    if (ir != NULL)
     {
-        fprintf(stderr, "Error: Failed to create code generator\n");
-        ir_free(ir);
-        semantic_free(analyzer);
-        ast_free(ast);
-        parser_free(parser);
-        return 1;
-    }
+        CodeGenerator *codegen = codegen_create(out_fp);
+        if (codegen == NULL)
+        {
+            fprintf(stderr, "Error: Failed to create code generator\n");
+            if (out_fp != stdout)
+            {
+                fclose(out_fp);
+            }
+            ir_free(ir);
+            semantic_free(analyzer);
+            if (ast != NULL)
+            {
+                ast_free(ast);
+            }
+            parser_free(parser);
+            return 1;
+        }
 
-    codegen_generate(codegen, ir);
+        codegen_generate(codegen, ir);
+        codegen_free(codegen);
+    }
+    else
+    {
+        printf("Code generation skipped due to errors in earlier phases.\n");
+    }
 
     if (out_fp != stdout)
     {
@@ -282,15 +337,35 @@ int main(int argc, char *argv[])
     printf("\n========================================\n");
     printf("=== COMPILATION SUMMARY ===\n");
     printf("========================================\n");
-    printf("Phases completed: Lexer -> Parser -> Semantic Analysis -> IR -> Codegen\n");
+
+    if (parser->error_count == 0 && semantic_error_count == 0)
+    {
+        printf("Phases completed: Lexer -> Parser -> Semantic Analysis -> IR -> Codegen\n");
+    }
+    else if (parser->error_count > 0)
+    {
+        printf("Compilation stopped after parsing due to syntax errors.\n");
+    }
+    else if (semantic_error_count > 0)
+    {
+        printf("Compilation completed with semantic errors.\n");
+    }
+
     printf("\n--- Error Report ---\n");
-    printf("Syntax Errors:     %d\n", syntax_error_count);
+    printf("Syntax Errors:     %d\n", parser->error_count);
     printf("Semantic Errors:   %d\n", semantic_error_count);
-    printf("Total Errors:      %d\n", error_count);
-    printf("Warnings:          %d\n", warning_count);
+    printf("Total Errors:      %d\n", parser->error_count + semantic_error_count);
+    printf("Warnings:          %d\n", parser->warning_count);
     printf("========================================\n");
 
-    if (error_count == 0)
+    // Print symbol table at the end
+    if (analyzer != NULL)
+    {
+        symtab_print(analyzer->symtab);
+    }
+    printf("========================================\n");
+
+    if ((parser->error_count + semantic_error_count) == 0)
     {
         printf("=== COMPILATION SUCCESSFUL ===\n");
     }
@@ -301,11 +376,16 @@ int main(int argc, char *argv[])
     printf("========================================\n");
 
     // Cleanup
-    codegen_free(codegen);
-    ir_free(ir);
+    if (ir != NULL)
+    {
+        ir_free(ir);
+    }
     semantic_free(analyzer);
-    ast_free(ast);
+    if (ast != NULL)
+    {
+        ast_free(ast);
+    }
     parser_free(parser);
 
-    return error_count > 0 ? 1 : 0;
+    return (parser->error_count + semantic_error_count) > 0 ? 1 : 0;
 }

@@ -84,7 +84,7 @@ typedef struct ASTNode
             char name[256];
             DataType data_type;
             int is_array;
-            int array_size; // 0 if not an array
+            int array_size;              // 0 if not an array
             struct ASTNode *initializer; // optional initializer expression
         } var_decl;
 
@@ -149,8 +149,8 @@ typedef struct ASTNode
         // NODE_ASSIGNMENT
         struct
         {
-            struct ASTNode *target;     // left-hand side
-            struct ASTNode *value;      // right-hand side
+            struct ASTNode *target; // left-hand side
+            struct ASTNode *value;  // right-hand side
         } assignment;
 
         // NODE_FUNCTION_CALL
@@ -177,7 +177,7 @@ typedef struct ASTNode
         // NODE_LITERAL
         struct
         {
-            char value[256];     // "10", "3.14", "\"hello\"", etc.
+            char value[256]; // "10", "3.14", "\"hello\"", etc.
             enum
             {
                 LITERAL_INT,
@@ -200,40 +200,40 @@ typedef struct ASTNode
 ASTNode *ast_create_node(NodeType type, int line, int column);
 ASTNode *ast_create_program(ASTNode **declarations, int num);
 ASTNode *ast_create_function_decl(const char *name, DataType return_type,
-                                   ASTNode **params, int num_params,
-                                   ASTNode *body, int line, int column);
+                                  ASTNode **params, int num_params,
+                                  ASTNode *body, int line, int column);
 ASTNode *ast_create_var_decl(const char *name, DataType data_type,
-                              int is_array, int array_size,
-                              ASTNode *initializer, int line, int column);
+                             int is_array, int array_size,
+                             ASTNode *initializer, int line, int column);
 ASTNode *ast_create_block(ASTNode **statements, int num, int line, int column);
 ASTNode *ast_create_if_stmt(ASTNode *condition, ASTNode *then_branch,
-                             ASTNode *else_branch, int line, int column);
+                            ASTNode *else_branch, int line, int column);
 ASTNode *ast_create_while_stmt(ASTNode *condition, ASTNode *body,
-                                int line, int column);
+                               int line, int column);
 ASTNode *ast_create_for_stmt(ASTNode *init, ASTNode *condition,
-                              ASTNode *increment, ASTNode *body,
-                              int line, int column);
+                             ASTNode *increment, ASTNode *body,
+                             int line, int column);
 ASTNode *ast_create_return_stmt(ASTNode *value, int line, int column);
 ASTNode *ast_create_break_stmt(int line, int column);
 ASTNode *ast_create_continue_stmt(int line, int column);
-ASTNode *ast_create_binary_op(const char *operator, ASTNode *left,
-                               ASTNode *right, int line, int column);
-ASTNode *ast_create_unary_op(const char *operator, ASTNode *operand,
-                              int line, int column);
+ASTNode *ast_create_binary_op(const char *operator, ASTNode * left,
+                              ASTNode *right, int line, int column);
+ASTNode *ast_create_unary_op(const char *operator, ASTNode * operand,
+                             int line, int column);
 ASTNode *ast_create_assignment(ASTNode *target, ASTNode *value,
-                                int line, int column);
+                               int line, int column);
 ASTNode *ast_create_function_call(const char *function_name,
-                                   ASTNode **arguments, int num_args,
-                                   int line, int column);
-ASTNode *ast_create_array_access(const char *array_name, ASTNode *index,
+                                  ASTNode **arguments, int num_args,
                                   int line, int column);
+ASTNode *ast_create_array_access(const char *array_name, ASTNode *index,
+                                 int line, int column);
 ASTNode *ast_create_identifier(const char *name, int line, int column);
 ASTNode *ast_create_literal_int(const char *value, int line, int column);
 ASTNode *ast_create_literal_float(const char *value, int line, int column);
 ASTNode *ast_create_literal_string(const char *value, int line, int column);
 ASTNode *ast_create_literal_char(const char *value, int line, int column);
 ASTNode *ast_create_cast(DataType target_type, ASTNode *expression,
-                          int line, int column);
+                         int line, int column);
 
 // AST manipulation functions
 void ast_free(ASTNode *node);

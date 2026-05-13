@@ -41,8 +41,8 @@ ASTNode *ast_create_program(ASTNode **declarations, int num)
 
 // Create function declaration node
 ASTNode *ast_create_function_decl(const char *name, DataType return_type,
-                                   ASTNode **params, int num_params,
-                                   ASTNode *body, int line, int column)
+                                  ASTNode **params, int num_params,
+                                  ASTNode *body, int line, int column)
 {
     ASTNode *node = ast_create_node(NODE_FUNCTION_DECL, line, column);
     if (node != NULL)
@@ -60,8 +60,8 @@ ASTNode *ast_create_function_decl(const char *name, DataType return_type,
 
 // Create variable declaration node
 ASTNode *ast_create_var_decl(const char *name, DataType data_type,
-                              int is_array, int array_size,
-                              ASTNode *initializer, int line, int column)
+                             int is_array, int array_size,
+                             ASTNode *initializer, int line, int column)
 {
     ASTNode *node = ast_create_node(NODE_VAR_DECL, line, column);
     if (node != NULL)
@@ -91,7 +91,7 @@ ASTNode *ast_create_block(ASTNode **statements, int num, int line, int column)
 
 // Create if statement node
 ASTNode *ast_create_if_stmt(ASTNode *condition, ASTNode *then_branch,
-                             ASTNode *else_branch, int line, int column)
+                            ASTNode *else_branch, int line, int column)
 {
     ASTNode *node = ast_create_node(NODE_IF_STMT, line, column);
     if (node != NULL)
@@ -105,7 +105,7 @@ ASTNode *ast_create_if_stmt(ASTNode *condition, ASTNode *then_branch,
 
 // Create while loop node
 ASTNode *ast_create_while_stmt(ASTNode *condition, ASTNode *body,
-                                int line, int column)
+                               int line, int column)
 {
     ASTNode *node = ast_create_node(NODE_WHILE_STMT, line, column);
     if (node != NULL)
@@ -118,8 +118,8 @@ ASTNode *ast_create_while_stmt(ASTNode *condition, ASTNode *body,
 
 // Create for loop node
 ASTNode *ast_create_for_stmt(ASTNode *init, ASTNode *condition,
-                              ASTNode *increment, ASTNode *body,
-                              int line, int column)
+                             ASTNode *increment, ASTNode *body,
+                             int line, int column)
 {
     ASTNode *node = ast_create_node(NODE_FOR_STMT, line, column);
     if (node != NULL)
@@ -157,7 +157,7 @@ ASTNode *ast_create_continue_stmt(int line, int column)
 
 // Create binary operation node
 ASTNode *ast_create_binary_op(const char *operator, ASTNode *left,
-                               ASTNode *right, int line, int column)
+                              ASTNode *right, int line, int column)
 {
     ASTNode *node = ast_create_node(NODE_BINARY_OP, line, column);
     if (node != NULL)
@@ -173,7 +173,7 @@ ASTNode *ast_create_binary_op(const char *operator, ASTNode *left,
 
 // Create unary operation node
 ASTNode *ast_create_unary_op(const char *operator, ASTNode *operand,
-                              int line, int column)
+                             int line, int column)
 {
     ASTNode *node = ast_create_node(NODE_UNARY_OP, line, column);
     if (node != NULL)
@@ -188,7 +188,7 @@ ASTNode *ast_create_unary_op(const char *operator, ASTNode *operand,
 
 // Create assignment node
 ASTNode *ast_create_assignment(ASTNode *target, ASTNode *value,
-                                int line, int column)
+                               int line, int column)
 {
     ASTNode *node = ast_create_node(NODE_ASSIGNMENT, line, column);
     if (node != NULL)
@@ -201,8 +201,8 @@ ASTNode *ast_create_assignment(ASTNode *target, ASTNode *value,
 
 // Create function call node
 ASTNode *ast_create_function_call(const char *function_name,
-                                   ASTNode **arguments, int num_args,
-                                   int line, int column)
+                                  ASTNode **arguments, int num_args,
+                                  int line, int column)
 {
     ASTNode *node = ast_create_node(NODE_FUNCTION_CALL, line, column);
     if (node != NULL)
@@ -218,7 +218,7 @@ ASTNode *ast_create_function_call(const char *function_name,
 
 // Create array access node
 ASTNode *ast_create_array_access(const char *array_name, ASTNode *index,
-                                  int line, int column)
+                                 int line, int column)
 {
     ASTNode *node = ast_create_node(NODE_ARRAY_ACCESS, line, column);
     if (node != NULL)
@@ -302,7 +302,7 @@ ASTNode *ast_create_literal_char(const char *value, int line, int column)
 
 // Create type cast node
 ASTNode *ast_create_cast(DataType target_type, ASTNode *expression,
-                          int line, int column)
+                         int line, int column)
 {
     ASTNode *node = ast_create_node(NODE_CAST, line, column);
     if (node != NULL)

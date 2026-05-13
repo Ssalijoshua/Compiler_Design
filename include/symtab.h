@@ -38,5 +38,6 @@ void symtab_exit_scope(SymbolTable *table);
 int symtab_define(SymbolTable *table, const char *name, SymbolKind kind, DataType type, int is_array);
 Symbol *symtab_lookup(SymbolTable *table, const char *name);
 Symbol *symtab_lookup_local(SymbolTable *table, const char *name);
+void symtab_print(SymbolTable *table);
 
 #endif

@@ -27,7 +27,7 @@ ErrorStats get_error_stats(void)
     ErrorStats stats;
     stats.syntax_errors = syntax_error_count;
     stats.semantic_errors = semantic_error_count;
-    stats.type_errors = 0;  // Can expand this later
+    stats.type_errors = 0; // Can expand this later
     stats.total_errors = error_count;
     stats.warnings = warning_count;
     return stats;

@@ -51,6 +51,8 @@ Parser *parser_create(FILE *fp)
     parser->input_file = fp;
     parser->error_count = 0;
     parser->warning_count = 0;
+    parser->pending_decls = NULL;
+    parser->pending_count = 0;
 
     // Get the first token
     parser->current_token = get_next_token(fp);
@@ -63,6 +65,10 @@ void parser_free(Parser *parser)
 {
     if (parser != NULL)
     {
+        if (parser->pending_decls != NULL)
+        {
+            free(parser->pending_decls);
+        }
         if (parser->input_file != NULL)
         {
             fclose(parser->input_file);
@@ -74,7 +80,7 @@ void parser_free(Parser *parser)
 // Error reporting
 void parser_error(Parser *parser, const char *message)
 {
-    error_report(ERROR_SYNTAX, parser->current_token.line, 
+    error_report(ERROR_SYNTAX, parser->current_token.line,
                  parser->current_token.column, message);
     parser->error_count++;
 }
@@ -147,6 +153,35 @@ ASTNode *parser_parse(Parser *parser)
     // Parse declarations until EOF
     while (parser->current_token.type != TOKEN_EOF)
     {
+        // Check if there are pending declarations from comma-separated declarations
+        if (parser->pending_count > 0 && parser->pending_decls != NULL)
+        {
+            ASTNode *pending_decl = parser->pending_decls[0];
+
+            // Shift remaining pending declarations
+            for (int i = 0; i < parser->pending_count - 1; i++)
+            {
+                parser->pending_decls[i] = parser->pending_decls[i + 1];
+            }
+            parser->pending_count--;
+
+            // Add the pending declaration
+            if (num_declarations >= capacity)
+            {
+                capacity *= 2;
+                ASTNode **new_decls = (ASTNode **)realloc(declarations,
+                                                          sizeof(ASTNode *) * capacity);
+                if (new_decls == NULL)
+                {
+                    parser_error(parser, "Memory allocation failed");
+                    return NULL;
+                }
+                declarations = new_decls;
+            }
+            declarations[num_declarations++] = pending_decl;
+            continue;
+        }
+
         ASTNode *decl = parse_declaration(parser);
         if (decl != NULL)
         {
@@ -204,7 +239,7 @@ static ASTNode *parse_declaration(Parser *parser)
     advance_token(parser);
 
     // Check if this is a function or variable declaration
-    if (check_token(parser, TOKEN_SEPARATOR) && 
+    if (check_token(parser, TOKEN_SEPARATOR) &&
         strcmp(parser->current_token.lexeme, "(") == 0)
     {
         // This is a function declaration
@@ -215,7 +250,7 @@ static ASTNode *parse_declaration(Parser *parser)
         int num_parameters = 0;
         int param_capacity = 5;
 
-        if (!(check_token(parser, TOKEN_SEPARATOR) && 
+        if (!(check_token(parser, TOKEN_SEPARATOR) &&
               strcmp(parser->current_token.lexeme, ")") == 0))
         {
             parameters = (ASTNode **)malloc(sizeof(ASTNode *) * param_capacity);
@@ -257,7 +292,7 @@ static ASTNode *parse_declaration(Parser *parser)
                 parameters[num_parameters++] = param;
 
                 // Check for comma separator
-                if (check_token(parser, TOKEN_SEPARATOR) && 
+                if (check_token(parser, TOKEN_SEPARATOR) &&
                     strcmp(parser->current_token.lexeme, ",") == 0)
                 {
                     advance_token(parser); // consume ','
@@ -270,7 +305,7 @@ static ASTNode *parse_declaration(Parser *parser)
         }
 
         // Expect closing paren
-        if (!(check_token(parser, TOKEN_SEPARATOR) && 
+        if (!(check_token(parser, TOKEN_SEPARATOR) &&
               strcmp(parser->current_token.lexeme, ")") == 0))
         {
             parser_error(parser, "Expected ')' after parameters");
@@ -295,12 +330,14 @@ static ASTNode *parse_declaration(Parser *parser)
     else
     {
         // This is a variable declaration - handle the rest
+        // Support for comma-separated declarations: int x, y, z;
+
         int is_array = 0;
         int array_size = 0;
         ASTNode *initializer = NULL;
 
         // Check for array declaration
-        if (check_token(parser, TOKEN_SEPARATOR) && 
+        if (check_token(parser, TOKEN_SEPARATOR) &&
             strcmp(parser->current_token.lexeme, "[") == 0)
         {
             is_array = 1;
@@ -312,7 +349,7 @@ static ASTNode *parse_declaration(Parser *parser)
                 advance_token(parser);
             }
 
-            if (!(check_token(parser, TOKEN_SEPARATOR) && 
+            if (!(check_token(parser, TOKEN_SEPARATOR) &&
                   strcmp(parser->current_token.lexeme, "]") == 0))
             {
                 parser_error(parser, "Expected ']' after array size");
@@ -324,14 +361,114 @@ static ASTNode *parse_declaration(Parser *parser)
         }
 
         // Check for initialization
-        if (check_token(parser, TOKEN_OPERATOR) && 
+        if (check_token(parser, TOKEN_OPERATOR) &&
             strcmp(parser->current_token.lexeme, "=") == 0)
         {
             advance_token(parser); // consume '='
             initializer = parse_expression(parser);
         }
 
-        if (!(check_token(parser, TOKEN_SEPARATOR) && 
+        // Create the first variable declaration
+        ASTNode *first_decl = ast_create_var_decl(function_name.lexeme, data_type, is_array, array_size,
+                                                  initializer, type_token.line, type_token.column);
+
+        // Handle comma-separated variables by creating a compound node
+        // For now, just handle the comma case by creating separate declarations
+        // and storing them via a different mechanism
+        if (check_token(parser, TOKEN_SEPARATOR) &&
+            strcmp(parser->current_token.lexeme, ",") == 0)
+        {
+            // We have comma-separated declarations
+            // Create a temporary structure to hold them all
+            ASTNode **all_decls = (ASTNode **)malloc(sizeof(ASTNode *) * 100);
+            int all_count = 0;
+            all_decls[all_count++] = first_decl;
+
+            while (check_token(parser, TOKEN_SEPARATOR) &&
+                   strcmp(parser->current_token.lexeme, ",") == 0)
+            {
+                advance_token(parser); // consume ','
+
+                if (parser->current_token.type != TOKEN_IDENTIFIER)
+                {
+                    parser_error(parser, "Expected variable name after comma");
+                    break;
+                }
+
+                Token var_name = parser->current_token;
+                advance_token(parser);
+
+                // Reset for next variable
+                initializer = NULL;
+                is_array = 0;
+                array_size = 0;
+
+                // Check for array declaration
+                if (check_token(parser, TOKEN_SEPARATOR) &&
+                    strcmp(parser->current_token.lexeme, "[") == 0)
+                {
+                    is_array = 1;
+                    advance_token(parser);
+
+                    if (parser->current_token.type == TOKEN_LITERAL)
+                    {
+                        array_size = atoi(parser->current_token.lexeme);
+                        advance_token(parser);
+                    }
+
+                    if (!(check_token(parser, TOKEN_SEPARATOR) &&
+                          strcmp(parser->current_token.lexeme, "]") == 0))
+                    {
+                        parser_error(parser, "Expected ']' after array size");
+                    }
+                    else
+                    {
+                        advance_token(parser);
+                    }
+                }
+
+                // Check for initialization
+                if (check_token(parser, TOKEN_OPERATOR) &&
+                    strcmp(parser->current_token.lexeme, "=") == 0)
+                {
+                    advance_token(parser);
+                    initializer = parse_expression(parser);
+                }
+
+                // Create variable declaration
+                ASTNode *var_decl = ast_create_var_decl(var_name.lexeme, data_type, is_array, array_size,
+                                                        initializer, type_token.line, type_token.column);
+                all_decls[all_count++] = var_decl;
+            }
+
+            if (!(check_token(parser, TOKEN_SEPARATOR) &&
+                  strcmp(parser->current_token.lexeme, ";") == 0))
+            {
+                parser_error(parser, "Expected ';' after variable declaration");
+            }
+            else
+            {
+                advance_token(parser);
+            }
+
+            // Store all declarations in parser for later retrieval
+            // For now, return a temporary structure that wraps them
+            // We'll use a compound assignment to return the first and queue the rest
+            parser->pending_count = all_count - 1;
+            if (all_count > 1)
+            {
+                parser->pending_decls = (ASTNode **)malloc(sizeof(ASTNode *) * (all_count - 1));
+                for (int i = 0; i < all_count - 1; i++)
+                {
+                    parser->pending_decls[i] = all_decls[i + 1];
+                }
+            }
+
+            free(all_decls);
+            return first_decl;
+        }
+
+        if (!(check_token(parser, TOKEN_SEPARATOR) &&
               strcmp(parser->current_token.lexeme, ";") == 0))
         {
             parser_error(parser, "Expected ';' after variable declaration");
@@ -341,8 +478,7 @@ static ASTNode *parse_declaration(Parser *parser)
             advance_token(parser);
         }
 
-        return ast_create_var_decl(function_name.lexeme, data_type, is_array, array_size,
-                                   initializer, type_token.line, type_token.column);
+        return first_decl;
     }
 }
 
@@ -366,6 +502,7 @@ static ASTNode *parse_variable_declaration(Parser *parser)
         return NULL;
     }
 
+    // Parse first variable
     Token var_name = parser->current_token;
     advance_token(parser);
 
@@ -405,6 +542,69 @@ static ASTNode *parse_variable_declaration(Parser *parser)
         initializer = parse_expression(parser);
     }
 
+    // Create first variable declaration
+    ASTNode *first_decl = ast_create_var_decl(var_name.lexeme, data_type, is_array, array_size,
+                                              initializer, line, column);
+
+    // Handle comma-separated variable declarations (int x, y, z;)
+    ASTNode **all_decls = NULL;
+    int all_count = 1; // Start with the first declaration
+    all_decls = (ASTNode **)malloc(sizeof(ASTNode *) * 100);
+    all_decls[0] = first_decl;
+
+    while (check_token(parser, TOKEN_SEPARATOR) && strcmp(parser->current_token.lexeme, ",") == 0)
+    {
+        advance_token(parser); // consume ','
+
+        if (parser->current_token.type != TOKEN_IDENTIFIER)
+        {
+            parser_error(parser, "Expected variable name after comma");
+            break;
+        }
+
+        var_name = parser->current_token;
+        advance_token(parser);
+
+        // Reset for next variable
+        initializer = NULL;
+        is_array = 0;
+        array_size = 0;
+
+        // Check for array declaration
+        if (check_token(parser, TOKEN_SEPARATOR) && strcmp(parser->current_token.lexeme, "[") == 0)
+        {
+            is_array = 1;
+            advance_token(parser);
+
+            if (parser->current_token.type == TOKEN_LITERAL)
+            {
+                array_size = atoi(parser->current_token.lexeme);
+                advance_token(parser);
+            }
+
+            if (!(check_token(parser, TOKEN_SEPARATOR) && strcmp(parser->current_token.lexeme, "]") == 0))
+            {
+                parser_error(parser, "Expected ']' after array size");
+            }
+            else
+            {
+                advance_token(parser);
+            }
+        }
+
+        // Check for initialization
+        if (check_token(parser, TOKEN_OPERATOR) && strcmp(parser->current_token.lexeme, "=") == 0)
+        {
+            advance_token(parser);
+            initializer = parse_expression(parser);
+        }
+
+        // Create variable declaration
+        ASTNode *next_decl = ast_create_var_decl(var_name.lexeme, data_type, is_array, array_size,
+                                                 initializer, line, column);
+        all_decls[all_count++] = next_decl;
+    }
+
     if (!(check_token(parser, TOKEN_SEPARATOR) && strcmp(parser->current_token.lexeme, ";") == 0))
     {
         parser_error(parser, "Expected ';' after variable declaration");
@@ -414,8 +614,19 @@ static ASTNode *parse_variable_declaration(Parser *parser)
         advance_token(parser);
     }
 
-    return ast_create_var_decl(var_name.lexeme, data_type, is_array, array_size,
-                               initializer, line, column);
+    // Store additional declarations in parser for later retrieval
+    if (all_count > 1)
+    {
+        parser->pending_count = all_count - 1;
+        parser->pending_decls = (ASTNode **)malloc(sizeof(ASTNode *) * (all_count - 1));
+        for (int i = 0; i < all_count - 1; i++)
+        {
+            parser->pending_decls[i] = all_decls[i + 1];
+        }
+    }
+
+    free(all_decls);
+    return first_decl;
 }
 
 // Parse a statement
@@ -526,6 +737,35 @@ static ASTNode *parse_block_statement(Parser *parser)
     while (!check_token(parser, TOKEN_EOF) &&
            !(check_token(parser, TOKEN_SEPARATOR) && strcmp(parser->current_token.lexeme, "}") == 0))
     {
+        // Check if there are pending declarations from comma-separated variable declarations
+        if (parser->pending_count > 0 && parser->pending_decls != NULL)
+        {
+            ASTNode *pending_stmt = parser->pending_decls[0];
+
+            // Shift remaining pending declarations
+            for (int i = 0; i < parser->pending_count - 1; i++)
+            {
+                parser->pending_decls[i] = parser->pending_decls[i + 1];
+            }
+            parser->pending_count--;
+
+            // Add the pending statement
+            if (num_statements >= capacity)
+            {
+                capacity *= 2;
+                ASTNode **new_stmts = (ASTNode **)realloc(statements,
+                                                          sizeof(ASTNode *) * capacity);
+                if (new_stmts == NULL)
+                {
+                    parser_error(parser, "Memory allocation failed");
+                    return NULL;
+                }
+                statements = new_stmts;
+            }
+            statements[num_statements++] = pending_stmt;
+            continue;
+        }
+
         ASTNode *stmt = parse_statement(parser);
         if (stmt != NULL)
         {
@@ -1014,7 +1254,7 @@ static ASTNode *parse_postfix_expression(Parser *parser)
                         {
                             capacity *= 2;
                             ASTNode **new_args = (ASTNode **)realloc(arguments,
-                                                                      sizeof(ASTNode *) * capacity);
+                                                                     sizeof(ASTNode *) * capacity);
                             if (new_args == NULL)
                             {
                                 parser_error(parser, "Memory allocation failed");
@@ -1042,7 +1282,7 @@ static ASTNode *parse_postfix_expression(Parser *parser)
                 }
 
                 expr = ast_create_function_call(expr->data.identifier.name, arguments,
-                                               num_arguments, expr->line, expr->column);
+                                                num_arguments, expr->line, expr->column);
             }
             else
             {
@@ -1073,7 +1313,7 @@ static ASTNode *parse_postfix_expression(Parser *parser)
                 }
 
                 expr = ast_create_array_access(expr->data.identifier.name, index,
-                                              expr->line, expr->column);
+                                               expr->line, expr->column);
             }
             else
             {

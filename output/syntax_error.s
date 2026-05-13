@@ -4,8 +4,12 @@
 .global main
 
 main:
-  mov %0, %t0
+  mov %10, %x
+  mov %20, %y
+  mov %x, %t0
+  mov %y, %t1
   mov %t0, %rax
-  ret
+  imul %t1, %rax
+  mov %rax, %z
 
 .end

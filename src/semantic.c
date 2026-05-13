@@ -45,12 +45,11 @@ static int semantic_check_node(SemanticAnalyzer *analyzer, ASTNode *node)
     switch (node->type)
     {
     case NODE_PROGRAM:
-        symtab_enter_scope(analyzer->symtab);
+        // Don't enter/exit scope for program - define everything at global scope (level 0)
         for (int i = 0; i < node->data.program.num_declarations; i++)
         {
             semantic_check_node(analyzer, node->data.program.declarations[i]);
         }
-        symtab_exit_scope(analyzer->symtab);
         break;
 
     case NODE_FUNCTION_DECL:
@@ -99,6 +98,53 @@ static int semantic_check_node(SemanticAnalyzer *analyzer, ASTNode *node)
         if (node->data.var_decl.initializer != NULL)
         {
             semantic_check_node(analyzer, node->data.var_decl.initializer);
+
+            // Type checking: verify initializer type matches declared type
+            DataType init_type = semantic_infer_type(analyzer, node->data.var_decl.initializer);
+            DataType decl_type = node->data.var_decl.data_type;
+
+            // Check for type mismatch (with some flexibility for int/float compatibility)
+            if (init_type != TYPE_UNKNOWN && decl_type != TYPE_UNKNOWN && init_type != decl_type)
+            {
+                int is_incompatible = 0;
+                const char *init_type_str = "unknown";
+
+                // Check if initializer is a string literal
+                int is_string_literal = (node->data.var_decl.initializer->type == NODE_LITERAL &&
+                                         node->data.var_decl.initializer->data.literal.literal_type == LITERAL_STRING);
+
+                if (is_string_literal)
+                {
+                    init_type_str = "string";
+                    // String to non-string type is always incompatible
+                    if (decl_type != TYPE_CHAR)
+                    {
+                        is_incompatible = 1;
+                    }
+                }
+                else
+                {
+                    // For non-string types, any mismatch is incompatible
+                    is_incompatible = 1;
+                    init_type_str = init_type == TYPE_INT ? "int" : init_type == TYPE_FLOAT ? "float"
+                                                                : init_type == TYPE_CHAR    ? "char"
+                                                                                            : "unknown";
+                }
+
+                if (is_incompatible)
+                {
+                    const char *decl_type_str = decl_type == TYPE_INT ? "int" : decl_type == TYPE_FLOAT ? "float"
+                                                                            : decl_type == TYPE_CHAR    ? "char"
+                                                                                                        : "unknown";
+
+                    char error_msg[256];
+                    snprintf(error_msg, sizeof(error_msg),
+                             "Type mismatch: cannot assign %s to %s",
+                             init_type_str, decl_type_str);
+                    error_report(ERROR_TYPE_MISMATCH, node->line, node->column, error_msg);
+                    analyzer->error_count++;
+                }
+            }
         }
         break;
 
@@ -157,6 +203,51 @@ static int semantic_check_node(SemanticAnalyzer *analyzer, ASTNode *node)
     case NODE_ASSIGNMENT:
         semantic_check_node(analyzer, node->data.assignment.target);
         semantic_check_node(analyzer, node->data.assignment.value);
+
+        // Type checking for assignment
+        DataType target_type = semantic_infer_type(analyzer, node->data.assignment.target);
+        DataType value_type = semantic_infer_type(analyzer, node->data.assignment.value);
+
+        if (target_type != TYPE_UNKNOWN && value_type != TYPE_UNKNOWN && target_type != value_type)
+        {
+            int is_incompatible = 0;
+            const char *value_type_str = "unknown";
+
+            // Check if value is a string literal
+            int is_string_literal = (node->data.assignment.value->type == NODE_LITERAL &&
+                                     node->data.assignment.value->data.literal.literal_type == LITERAL_STRING);
+
+            if (is_string_literal)
+            {
+                value_type_str = "string";
+                // String to non-string type is always incompatible
+                if (target_type != TYPE_CHAR)
+                {
+                    is_incompatible = 1;
+                }
+            }
+            else
+            {
+                // For non-string types, any mismatch is incompatible
+                is_incompatible = 1;
+                value_type_str = value_type == TYPE_INT ? "int" : value_type == TYPE_FLOAT ? "float"
+                                                              : value_type == TYPE_CHAR    ? "char"
+                                                                                           : "unknown";
+            }
+
+            if (is_incompatible)
+            {
+                const char *target_type_str = target_type == TYPE_INT ? "int" : target_type == TYPE_FLOAT ? "float"
+                                                                            : target_type == TYPE_CHAR    ? "char"
+                                                                                                          : "unknown";
+                char error_msg[256];
+                snprintf(error_msg, sizeof(error_msg),
+                         "Type mismatch: cannot assign %s to %s",
+                         value_type_str, target_type_str);
+                error_report(ERROR_TYPE_MISMATCH, node->line, node->column, error_msg);
+                analyzer->error_count++;
+            }
+        }
         break;
 
     case NODE_BINARY_OP:
