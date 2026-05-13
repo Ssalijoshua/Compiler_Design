@@ -55,21 +55,21 @@ int main()
     int x = 10;
     int y = 20;
     int sum = add(x, y);
-    
+
     float value = 5.5;
     char name[100] = "Hello World";
-    
+
     if (sum > 25)
     {
         sum = sum - 5;
     }
-    
+
     count_up(10);
-    
+
     int fact = factorial(5);
-    
+
     int neg = -42;
     int absolute = abs_value(neg);
-    
+
     return 0;
 }

@@ -24,5 +24,6 @@ typedef struct
 
 // Function declarations
 Token get_next_token(FILE *fp);
+void reset_lexer(void);
 
 #endif

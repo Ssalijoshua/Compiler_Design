@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "../include/parser.h"
 #include "../include/ast.h"
+#include "../include/error.h"
 
 // Forward declarations of parsing functions
 static ASTNode *parse_declaration(Parser *parser);
@@ -73,14 +74,14 @@ void parser_free(Parser *parser)
 // Error reporting
 void parser_error(Parser *parser, const char *message)
 {
-    fprintf(stderr, "Parse Error at line %d, column %d: %s\n",
-            parser->current_token.line, parser->current_token.column, message);
+    error_report(ERROR_SYNTAX, parser->current_token.line, 
+                 parser->current_token.column, message);
     parser->error_count++;
 }
 
 void parser_warning(Parser *parser, const char *message)
 {
-    fprintf(stderr, "Parse Warning at line %d, column %d: %s\n",
+    fprintf(stderr, "[Warning] Line %d, Column %d: %s\n",
             parser->current_token.line, parser->current_token.column, message);
     parser->warning_count++;
 }

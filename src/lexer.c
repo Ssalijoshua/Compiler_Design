@@ -26,6 +26,13 @@ static int is_keyword(const char *lexeme)
     return 0;
 }
 
+// Reset lexer state when rewinding file
+void reset_lexer(void)
+{
+    line = 1;
+    column = 1;
+}
+
 Token get_next_token(FILE *fp)
 {
     int c;

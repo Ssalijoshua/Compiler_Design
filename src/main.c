@@ -116,6 +116,7 @@ int main(int argc, char *argv[])
 
     // Rewind file for parser to use
     rewind(fp);
+    reset_lexer();  // Reset lexer state for parsing
 
     // ===== PHASE 1: PARSING =====
     printf("=== PHASE 1: SYNTAX ANALYSIS & AST CONSTRUCTION ===\n");
@@ -132,6 +133,17 @@ int main(int argc, char *argv[])
     ASTNode *ast = parser_parse(parser);
 
     printf("Errors: %d | Warnings: %d\n\n", parser->error_count, parser->warning_count);
+
+    // Check for syntax errors and stop compilation if found
+    if (parser->error_count > 0)
+    {
+        printf("\n=== COMPILATION FAILED ===\n");
+        printf("Syntax Errors: %d\n", parser->error_count);
+        printf("Compilation stopped at Phase 1 due to syntax errors.\n");
+        ast_free(ast);
+        parser_free(parser);
+        return 1;
+    }
 
     if (ast == NULL)
     {
@@ -162,11 +174,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    reset_error_counters();
     int semantic_ok = semantic_analyze(analyzer, ast);
     printf("Semantic analysis complete.\n");
-    printf("Errors: %d\n\n", error_count);
+    printf("Errors: %d\n\n", semantic_error_count);
 
-    if (!semantic_ok)
+    if (!semantic_ok && semantic_error_count > 0)
     {
         fprintf(stderr, "Warning: Semantic errors found, continuing anyway...\n");
     }
@@ -179,7 +192,7 @@ int main(int argc, char *argv[])
         semantic_free(analyzer);
         ast_free(ast);
         parser_free(parser);
-        return error_count > 0 ? 1 : 0;
+        return semantic_error_count > 0 ? 1 : 0;
     }
 
     // ===== PHASE 3: INTERMEDIATE CODE GENERATION =====
@@ -205,7 +218,7 @@ int main(int argc, char *argv[])
         semantic_free(analyzer);
         ast_free(ast);
         parser_free(parser);
-        return 0;
+        return semantic_error_count > 0 ? 1 : 0;
     }
 
     // ===== PHASE 4-5: CODE GENERATION =====
@@ -265,9 +278,27 @@ int main(int argc, char *argv[])
         fclose(out_fp);
     }
 
-    printf("\n=== COMPILATION SUCCESSFUL ===\n");
+    // Print compilation summary
+    printf("\n========================================\n");
+    printf("=== COMPILATION SUMMARY ===\n");
+    printf("========================================\n");
     printf("Phases completed: Lexer -> Parser -> Semantic Analysis -> IR -> Codegen\n");
-    printf("Errors: %d | Warnings: %d\n", error_count, warning_count);
+    printf("\n--- Error Report ---\n");
+    printf("Syntax Errors:     %d\n", syntax_error_count);
+    printf("Semantic Errors:   %d\n", semantic_error_count);
+    printf("Total Errors:      %d\n", error_count);
+    printf("Warnings:          %d\n", warning_count);
+    printf("========================================\n");
+
+    if (error_count == 0)
+    {
+        printf("=== COMPILATION SUCCESSFUL ===\n");
+    }
+    else
+    {
+        printf("=== COMPILATION COMPLETED WITH ERRORS ===\n");
+    }
+    printf("========================================\n");
 
     // Cleanup
     codegen_free(codegen);
