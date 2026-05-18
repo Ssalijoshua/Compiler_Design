@@ -1,4 +1,4 @@
-# Designing a compiler in C
+# What?
 
 A compiler for the C programming language that translates C source code to machine code.
 
