@@ -1,4 +1,4 @@
-# This is a demo
+# Designing a compiler in C
 
 A compiler for the C programming language that translates C source code to machine code.
 
