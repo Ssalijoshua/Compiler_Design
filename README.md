@@ -1,4 +1,4 @@
-# C Compiler Project
+# This is a demo
 
 A compiler for the C programming language that translates C source code to machine code.
 
